@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI聊天助手</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            height: 95vh;
+        }
+        
+        /* 配置面板样式 */
+        .config-panel {
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-right: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .config-header {
+            background-color: #4a76a8;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .config-content {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .config-group {
+            margin-bottom: 20px;
+        }
+        
+        .config-group h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .config-item {
+            margin-bottom: 15px;
+        }
+        
+        .config-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .config-item input, .config-item textarea, .config-item select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .config-item textarea {
+            min-height: 100px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        
+        .config-actions {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        
+        .config-actions button {
+            background-color: #4a76a8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        
+        .config-actions button:hover {
+            background-color: #3a5a78;
+        }
+        
+        .config-actions button.secondary {
+            background-color: #6c757d;
+        }
+        
+        .config-actions button.secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* 聊天容器样式 */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .chat-header {
+            background-color: #4a76a8;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .model-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .assistant-message {
+            background-color: #f1f1f1;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #eee;
+            background-color: white;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        
+        #send-button {
+            background-color: #4a76a8;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        
+        #send-button:hover {
+            background-color: #3a5a78;
+        }
+        
+        .typing-indicator {
+            display: none;
+            color: #888;
+            font-style: italic;
+            margin: 10px 0;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                padding: 10px;
+            }
+            
+            .config-panel {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+                max-height: 300px;
+            }
+            
+            .main-container {
+                height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 配置面板 -->
+    <div class="config-panel">
+        <div class="config-header">
+            API配置
+        </div>
+        <div class="config-content">
+            <div class="config-group">
+                <h3>系统消息</h3>
+                <div class="config-item">
+                    <label for="system-message">系统消息</label>
+                    <textarea id="system-message">你是一个友好的中文助手，请用简洁的语言回答问题。</textarea>
+                </div>
+            </div>
+            
+            <div class="config-group">
+                <h3>JSON配置</h3>
+                <div class="config-item">
+                    <label for="json-config">完整配置 (JSON)</label>
+                    <textarea id="json-config" placeholder='{"BaseUrl": "...", "ApiKey": "...", "Model": "..."}'></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="config-actions">
+            <button id="save-config">保存配置</button>
+            <button id="reload-config" class="secondary">重新加载</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+    
+    <!-- 聊天主容器 -->
+    <div class="main-container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <span>AI聊天助手</span>
+                <span class="model-info" id="model-info">加载中...</span>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message assistant-message">
+                    你好！我是AI助手，有什么可以帮助你的吗？
+                </div>
+            </div>
+            <div class="typing-indicator" id="typing-indicator">
+                AI正在思考...
+            </div>
+            <div class="chat-input">
+                <input type="text" id="message-input" placeholder="输入消息..." autocomplete="off">
+                <button id="send-button">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 生成随机会话ID
+        const sessionId = Math.random().toString(36).substring(2, 15);
+        
+        // 获取DOM元素
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const modelInfo = document.getElementById('model-info');
+        
+        // 配置相关元素
+        const systemMessageInput = document.getElementById('system-message');
+        const jsonConfigInput = document.getElementById('json-config');
+        const saveConfigButton = document.getElementById('save-config');
+        const reloadConfigButton = document.getElementById('reload-config');
+        const statusMessage = document.getElementById('status-message');
+        
+        // 当前配置
+        let currentConfig = {
+            temperature: 0.7,  // 默认温度值
+            systemMessage: "你是一个友好的中文助手，请用简洁的语言回答问题。"
+        };
+        
+        // 系统消息变更事件
+        systemMessageInput.addEventListener('change', function() {
+            currentConfig.systemMessage = this.value;
+        });
+        
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // 更新JSON配置
+                    jsonConfigInput.value = JSON.stringify(data.config, null, 2);
+                    
+                    // 更新模型信息
+                    if (data.current_model) {
+                        modelInfo.textContent = `当前模型: ${data.current_model}`;
+                    } else {
+                        modelInfo.textContent = `模型: ${data.config.Model}`;
+                    }
+                    
+                    showStatus('配置加载成功', 'success');
+                } else {
+                    showStatus('加载配置失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showStatus('加载配置时出错', 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        // 保存配置
+        async function saveConfig() {
+            try {
+                // 尝试解析JSON配置
+                let configData;
+                try {
+                    configData = JSON.parse(jsonConfigInput.value);
+                } catch (e) {
+                    showStatus('JSON格式错误', 'error');
+                    return;
+                }
+                
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        config: configData
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showStatus('配置保存成功', 'success');
+                    
+                    // 更新模型信息
+                    if (data.current_model) {
+                        modelInfo.textContent = `当前模型: ${data.current_model}`;
+                    } else {
+                        modelInfo.textContent = `模型: ${configData.Model}`;
+                    }
+                    
+                    // 清空聊天历史
+                    resetChat();
+                } else {
+                    showStatus('保存配置失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showStatus('保存配置时出错', 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            statusMessage.classList.add('status-' + type);
+            statusMessage.style.display = 'block';
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 重置聊天
+        function resetChat() {
+            // 清空聊天历史，只保留欢迎消息
+            chatMessages.innerHTML = '';
+            addMessage('你好！我是AI助手，有什么可以帮助你的吗？', 'assistant');
+        }
+        
+        // 发送消息函数
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // 清空输入框
+            messageInput.value = '';
+            
+            // 添加用户消息到聊天界面
+            addMessage(message, 'user');
+            
+            // 显示"正在输入"指示器
+            typingIndicator.style.display = 'block';
+            
+            try {
+                // 发送请求到服务器
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId,
+                        system_message: currentConfig.systemMessage,
+                        temperature: currentConfig.temperature
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                // 隐藏"正在输入"指示器
+                typingIndicator.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    // 添加AI回复到聊天界面
+                    addMessage(data.reply, 'assistant');
+                } else {
+                    // 显示错误消息
+                    addMessage('抱歉，发生了错误: ' + data.message, 'assistant');
+                }
+            } catch (error) {
+                // 隐藏"正在输入"指示器
+                typingIndicator.style.display = 'none';
+                
+                // 显示错误消息
+                addMessage('抱歉，连接服务器时发生错误', 'assistant');
+                console.error('Error:', error);
+            }
+        }
+        
+        // 添加消息到聊天界面
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(sender + '-message');
+            messageElement.textContent = text;
+            
+            chatMessages.appendChild(messageElement);
+            
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 事件监听器
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        saveConfigButton.addEventListener('click', saveConfig);
+        reloadConfigButton.addEventListener('click', loadConfig);
+        
+        // 初始化
+        loadConfig();
+        
+        // 聚焦输入框
+        messageInput.focus();
+    </script>
+</body>
+</html> 

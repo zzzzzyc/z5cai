@@ -1,0 +1,5 @@
+{
+    "ApiKey": "sk-mxkxbjipnaumdrjnjagjyrympyxycshuiacrojirtbhopvyv",
+    "BaseUrl": "https://api.siliconflow.cn/v1",
+    "Model": "Qwen/QwQ-32B"
+}
